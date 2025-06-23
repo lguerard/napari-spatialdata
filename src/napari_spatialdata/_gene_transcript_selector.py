@@ -8,25 +8,20 @@ from typing import Optional
 
 def get_sdata_from_viewer(viewer):
     """
-    Attempt to retrieve the SpatialData object from the viewer or its layers, with debug output.
+    Retrieve the SpatialData object from any layer's metadata for napari-spatialdata Interactive mode.
+    Looks for the 'spatialdata_object' key in layer.metadata in all viewer layers.
     """
     print("DEBUG: get_sdata_from_viewer called")
-    # Try as a direct attribute
-    if hasattr(viewer, 'sdata'):
-        print("DEBUG: viewer has attribute 'sdata':", viewer.sdata)
-        return viewer.sdata
-    # Try via layer metadata
+    print("DEBUG: viewer type:", type(viewer))
     for idx, layer in enumerate(viewer.layers):
-        print(f"DEBUG: examining viewer.layers[{idx}] ({layer.name})")
-        if hasattr(layer, 'metadata'):
-            print(f"DEBUG: layer.metadata = {layer.metadata}")
-            if 'spatialdata_object' in layer.metadata:
-                print("DEBUG: found 'spatialdata_object' in layer.metadata")
-                return layer.metadata['spatialdata_object']
-        if hasattr(layer, 'sdata'):
-            print(f"DEBUG: layer has attribute 'sdata': {layer.sdata}")
-            return layer.sdata
-    print("DEBUG: No SpatialData object found in viewer or layers")
+        print(f"DEBUG: Layer {idx} name={layer.name}, type={type(layer)}")
+        md = getattr(layer, 'metadata', {})
+        print(f"DEBUG: Layer.metadata: {md}")
+        sdata = md.get("spatialdata_object", None)
+        if sdata is not None:
+            print(f"DEBUG: Found SpatialData object in layer {idx} ({layer.name}) metadata['spatialdata_object']")
+            return sdata
+    print("DEBUG: No SpatialData object found in any layer metadata")
     return None
 
 class GeneTranscriptSelector(QWidget):
