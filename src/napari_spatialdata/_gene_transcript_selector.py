@@ -11,7 +11,7 @@ class GeneTranscriptSelector(QWidget):
     def __init__(
         self,
         sdata=None,
-        points_key='points',
+        points_key=None,  # default to None, pick first available
         gene_column='gene',
         transcript_id_column=None,
     ):
@@ -43,19 +43,28 @@ class GeneTranscriptSelector(QWidget):
         self.gene_selector.currentTextChanged.connect(self.update_transcripts)
 
     def set_sdata(self, sdata):
-        self.sdata = sdata
-        # Find any points table in the sdata object
-        pt = None
-        if hasattr(self.sdata, "points"):
-            pt = getattr(self.sdata, "points")
-            if hasattr(pt, "table"):
-                self.points_table = pt.table
-        if self.points_table is not None:
-            self.populate_genes()
-            if self.gene_selector.count() > 0:
-                self.update_transcripts(self.gene_selector.currentText())
-        else:
-            show_info("No points table found in SpatialData object.")
+    self.sdata = sdata
+    pt = None
+    if hasattr(self.sdata, "points"):
+        pt = getattr(self.sdata, "points")
+        if hasattr(pt, "data"):
+            # pt.data is a dict: keys are point names, values are DataFrames
+            if isinstance(pt.data, dict) and len(pt.data) > 0:
+                # Use first key by default; could be improved to let user choose
+                points_key = list(pt.data.keys())[0]
+                self.points_key = points_key
+                points_df = pt.data[points_key]
+                # Convert Dask DataFrame to pandas if needed
+                if hasattr(points_df, "compute"):
+                    points_df = points_df.compute()
+                self.points_table = points_df
+    if self.points_table is not None:
+        self.populate_genes()
+        if self.gene_selector.count() > 0:
+            self.update_transcripts(self.gene_selector.currentText())
+    else:
+        show_info("No points table found in SpatialData object.")
+
 
     def populate_genes(self):
         unique_genes = sorted(self.points_table[self.gene_column].unique())
