@@ -64,9 +64,20 @@ class GeneTranscriptSelector(QWidget):
         self.gene_selector.currentTextChanged.connect(self.update_transcripts)
 
     def set_sdata(self, sdata):
-        """Set sdata and extract the points table."""
+        """Set sdata and extract the points table, with debug output."""
         self.sdata = sdata
         self.points_table = None
+
+        # DEBUG: Print out the structure of sdata and points
+        print("DEBUG: sdata =", self.sdata)
+        if hasattr(self.sdata, "points"):
+            print("DEBUG: sdata.points =", self.sdata.points)
+            if hasattr(self.sdata.points, "data"):
+                print("DEBUG: sdata.points.data keys =", list(self.sdata.points.data.keys()))
+            else:
+                print("DEBUG: sdata.points has no 'data' attribute")
+        else:
+            print("DEBUG: sdata has no 'points' attribute")
 
         if hasattr(self.sdata, "points") and hasattr(self.sdata.points, "data"):
             available_keys = list(self.sdata.points.data.keys())
