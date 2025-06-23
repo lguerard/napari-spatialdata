@@ -8,17 +8,25 @@ from typing import Optional
 
 def get_sdata_from_viewer(viewer):
     """
-    Attempt to retrieve the SpatialData object from the viewer or its layers.
+    Attempt to retrieve the SpatialData object from the viewer or its layers, with debug output.
     """
+    print("DEBUG: get_sdata_from_viewer called")
     # Try as a direct attribute
     if hasattr(viewer, 'sdata'):
+        print("DEBUG: viewer has attribute 'sdata':", viewer.sdata)
         return viewer.sdata
     # Try via layer metadata
-    for layer in viewer.layers:
-        if hasattr(layer, 'metadata') and 'spatialdata_object' in layer.metadata:
-            return layer.metadata['spatialdata_object']
+    for idx, layer in enumerate(viewer.layers):
+        print(f"DEBUG: examining viewer.layers[{idx}] ({layer.name})")
+        if hasattr(layer, 'metadata'):
+            print(f"DEBUG: layer.metadata = {layer.metadata}")
+            if 'spatialdata_object' in layer.metadata:
+                print("DEBUG: found 'spatialdata_object' in layer.metadata")
+                return layer.metadata['spatialdata_object']
         if hasattr(layer, 'sdata'):
+            print(f"DEBUG: layer has attribute 'sdata': {layer.sdata}")
             return layer.sdata
+    print("DEBUG: No SpatialData object found in viewer or layers")
     return None
 
 class GeneTranscriptSelector(QWidget):
