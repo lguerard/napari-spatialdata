@@ -9,19 +9,24 @@ from typing import Optional
 def get_sdata_from_viewer(viewer):
     """
     Retrieve the SpatialData object from any layer's metadata for napari-spatialdata Interactive mode.
-    Looks for the 'spatialdata_object' key in layer.metadata in all viewer layers.
+    Writes debug info to sdata_debug.txt if the napari console is unavailable.
     """
-    print("DEBUG: get_sdata_from_viewer called")
-    print("DEBUG: viewer type:", type(viewer))
+    def log(msg):
+        with open("sdata_debug.txt", "a") as f:
+            f.write(msg + "\n")
+    log("get_sdata_from_viewer called")
+    log(f"viewer type: {type(viewer)}")
     for idx, layer in enumerate(viewer.layers):
-        print(f"DEBUG: Layer {idx} name={layer.name}, type={type(layer)}")
+        log(f"Layer {idx}: {layer.name}, type={type(layer)}")
         md = getattr(layer, 'metadata', {})
-        print(f"DEBUG: Layer.metadata: {md}")
-        sdata = md.get("spatialdata_object", None)
-        if sdata is not None:
-            print(f"DEBUG: Found SpatialData object in layer {idx} ({layer.name}) metadata['spatialdata_object']")
-            return sdata
-    print("DEBUG: No SpatialData object found in any layer metadata")
+        log(f"Layer.metadata: {md}")
+        for k, v in md.items():
+            log(f"  metadata[{k}]: {type(v)} {v}")
+            # Try all plausible keys for SpatialData
+            if k.lower() in ("spatialdata_object", "sdata", "spatialdata"):
+                log(f"  Found possible SpatialData under key '{k}'")
+                return v
+    log("No SpatialData object found in any layer metadata")
     return None
 
 class GeneTranscriptSelector(QWidget):
@@ -67,25 +72,29 @@ class GeneTranscriptSelector(QWidget):
         self.gene_selector.currentTextChanged.connect(self.update_transcripts)
 
     def set_sdata(self, sdata):
-        """Set sdata and extract the points table, with debug output."""
+        """Set sdata and extract the points table, with debug output to file."""
+        def log(msg):
+            with open("sdata_debug.txt", "a") as f:
+                f.write(msg + "\n")
         self.sdata = sdata
         self.points_table = None
 
-        # DEBUG: Print out the structure of sdata and points
-        print("DEBUG: sdata =", self.sdata)
+        log("set_sdata called")
+        log(f"sdata: {repr(self.sdata)}")
         if hasattr(self.sdata, "points"):
-            print("DEBUG: sdata.points =", self.sdata.points)
+            log(f"sdata.points: {repr(self.sdata.points)}")
             if hasattr(self.sdata.points, "data"):
-                print("DEBUG: sdata.points.data keys =", list(self.sdata.points.data.keys()))
+                log(f"sdata.points.data keys: {list(self.sdata.points.data.keys())}")
             else:
-                print("DEBUG: sdata.points has no 'data' attribute")
+                log("sdata.points has no 'data' attribute")
         else:
-            print("DEBUG: sdata has no 'points' attribute")
+            log("sdata has no 'points' attribute")
 
         if hasattr(self.sdata, "points") and hasattr(self.sdata.points, "data"):
             available_keys = list(self.sdata.points.data.keys())
             if not available_keys:
                 show_info("No points data found in SpatialData object.")
+                log("No points data found in SpatialData object.")
                 return
 
             # Use given points_key if available, else first key
@@ -106,6 +115,7 @@ class GeneTranscriptSelector(QWidget):
                 self.update_transcripts(self.gene_selector.currentText())
         else:
             show_info("No gene column found in points table.")
+            log("No gene column found in points table.")
 
     def set_viewer(self, viewer):
         self.viewer = viewer
