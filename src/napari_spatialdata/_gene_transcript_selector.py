@@ -1,11 +1,25 @@
 import pandas as pd
 from napari.layers import Points
 from napari.utils.notifications import show_info
-from napari_spatialdata._sdata_widgets import get_sdata_from_viewer
 from qtpy.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QComboBox, QListWidget, QPushButton
 )
 from typing import Optional
+
+def get_sdata_from_viewer(viewer):
+    """
+    Attempt to retrieve the SpatialData object from the viewer or its layers.
+    """
+    # Try as a direct attribute
+    if hasattr(viewer, 'sdata'):
+        return viewer.sdata
+    # Try via layer metadata
+    for layer in viewer.layers:
+        if hasattr(layer, 'metadata') and 'spatialdata_object' in layer.metadata:
+            return layer.metadata['spatialdata_object']
+        if hasattr(layer, 'sdata'):
+            return layer.sdata
+    return None
 
 class GeneTranscriptSelector(QWidget):
     def __init__(
